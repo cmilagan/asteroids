@@ -1,12 +1,28 @@
 import pygame
 import sys
 import time
+import os
 from constants import SCREEN_WIDTH, SCREEN_HEIGHT, LINE_WIDTH
 from logger import log_state, log_event
 from player import Player
 from asteroid import Asteroid
 from asteroidfield import AsteroidField
 from shot import Shot
+
+def load_high_score():
+    if os.path.exists("highscore.txt"):
+        try:
+            with open("highscore.txt", "r") as f:
+                content = f.read().strip()
+                if content:
+                    return int(content)
+        except (ValueError, IOError):
+            pass
+    return 0
+
+def save_high_score(high_score):
+    with open("highscore.txt", "w") as f:
+        f.write(str(high_score))
 
 def check_quit(game):
     for event in game.event.get():
@@ -24,7 +40,10 @@ def check_end_conditions(player, asteroids, screen):
                 return True
     return False
 
-def print_final_score(score, screen):
+def print_final_score(score, high_score, screen):
+    if score > high_score:
+        high_score = score
+        save_high_score(high_score)
     end_font = pygame.font.SysFont("Arial", 64)
     end_text = end_font.render("Game Over!", True, "white")
     text_rect = end_text.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/2))
@@ -33,6 +52,9 @@ def print_final_score(score, screen):
     final_score_text = final_score_font.render(f"Final Score: {score}", True, "white")
     text_rect = final_score_text.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/2 + 50))
     screen.blit(final_score_text, text_rect)
+    high_score_text = final_score_font.render(f"High Score: {high_score}", True, "white")
+    text_rect = high_score_text.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/2 + 80))
+    screen.blit(high_score_text, text_rect)
     pygame.display.flip()
     time.sleep(2)
     sys.exit()
@@ -52,8 +74,31 @@ def check_asteroid_collisions(asteroids):
     for i, asteroid1 in enumerate(asteroids):
         for asteroid2 in list(asteroids)[i+1:]:
             if asteroid1.collides_with(asteroid2):
-                # Bounce off each other by swapping velocities
-                asteroid1.velocity, asteroid2.velocity = asteroid2.velocity, asteroid1.velocity
+                # Elastic collision response
+                normal = (asteroid2.position - asteroid1.position).normalize()
+
+                # Masses proportional to radius
+                mass1 = asteroid1.radius
+                mass2 = asteroid2.radius
+
+                # Velocity components along normal
+                v1_n = asteroid1.velocity.dot(normal)
+                v2_n = asteroid2.velocity.dot(normal)
+
+                # Relative velocity along normal
+                rel_vel_n = v2_n - v1_n
+
+                # Do not resolve if velocities are separating
+                if rel_vel_n > 0:
+                    continue
+
+                # Elastic collision formulas
+                new_v1_n = (v1_n * (mass1 - mass2) + 2 * mass2 * v2_n) / (mass1 + mass2)
+                new_v2_n = (v2_n * (mass2 - mass1) + 2 * mass1 * v1_n) / (mass1 + mass2)
+
+                # Update velocities: tangential components stay the same
+                asteroid1.velocity += (new_v1_n - v1_n) * normal
+                asteroid2.velocity += (new_v2_n - v2_n) * normal
 
 def main():
     print(f"Starting Asteroids with pygame version: {pygame.version.ver}")
@@ -65,6 +110,7 @@ def main():
     pygame.font.init()
     score_font = pygame.font.SysFont("Arial", 24)
     lives_font = pygame.font.SysFont("Arial", 24)
+    high_score_font = pygame.font.SysFont("Arial", 24)
 
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     clock = pygame.time.Clock()
@@ -84,6 +130,7 @@ def main():
 
     player = Player(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2)
     score = 0
+    high_score = load_high_score()
     asteroid_field = AsteroidField()
     # game loop
     while True:
@@ -95,7 +142,7 @@ def main():
         check_asteroid_collisions(asteroids)
 
         if check_end_conditions(player, asteroids, screen):
-            print_final_score(score, screen)
+            print_final_score(score, high_score, screen)
 
         if check_shot_collisions(shots, asteroids): score += 1
 
@@ -103,6 +150,8 @@ def main():
         screen.blit(lives_text, (SCREEN_WIDTH - 100, 10))
         score_text = score_font.render(f"Score: {score}", True, "white")
         screen.blit(score_text, (10, 10))
+        high_score_text = high_score_font.render(f"High Score: {high_score}", True, "white")
+        screen.blit(high_score_text, (10, 40))
         for drawable_sprite in drawable:
             drawable_sprite.draw(screen, "white", drawable_sprite.radius, LINE_WIDTH)
 
