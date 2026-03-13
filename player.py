@@ -15,6 +15,16 @@ class Player(CircleShape):
         super().__init__(x, y, PLAYER_RADIUS)
         self.rotation = 0
         self.cooldown = 0
+        self.__lives = 3
+
+    def get_lives(self):
+        return self.__lives
+
+    def lose_life(self):
+        self.__lives -= 1
+
+    def gain_life(self):
+        self.__lives += 1
 
     def triangle(self):
         forward = pygame.Vector2(0, 1).rotate(self.rotation)

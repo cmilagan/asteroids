@@ -18,8 +18,10 @@ def check_end_conditions(player, asteroids, screen):
     end_font = pygame.font.SysFont("Arial", 64)
     for asteroid in asteroids:
         if player.collides_with(asteroid):
-            log_event("player_hit")
-            return True
+            asteroid.kill()
+            player.lose_life()
+            if player.get_lives() <= 0:
+                return True
     return False
 
 def print_final_score(score, screen):
@@ -55,6 +57,8 @@ def main():
     pygame.init()
     pygame.font.init()
     score_font = pygame.font.SysFont("Arial", 24)
+    lives_font = pygame.font.SysFont("Arial", 24)
+
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     clock = pygame.time.Clock()
     dt = 0 # delta time in seconds
@@ -78,7 +82,6 @@ def main():
     while True:
         log_state()
         check_quit(pygame)
-
         screen.fill("black")
         updatable.update(dt)
 
@@ -86,6 +89,9 @@ def main():
             print_final_score(score, screen)
 
         if check_shot_collisions(shots, asteroids): score += 1
+
+        lives_text = lives_font.render(f"Lives: {player.get_lives()}", True, "white")
+        screen.blit(lives_text, (SCREEN_WIDTH - 100, 10))
         score_text = score_font.render(f"Score: {score}", True, "white")
         screen.blit(score_text, (10, 10))
         for drawable_sprite in drawable:
