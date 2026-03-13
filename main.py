@@ -48,6 +48,13 @@ def check_shot_collisions(shots, asteroids):
                 shot.kill()
     return increment_score
 
+def check_asteroid_collisions(asteroids):
+    for i, asteroid1 in enumerate(asteroids):
+        for asteroid2 in list(asteroids)[i+1:]:
+            if asteroid1.collides_with(asteroid2):
+                # Bounce off each other by swapping velocities
+                asteroid1.velocity, asteroid2.velocity = asteroid2.velocity, asteroid1.velocity
+
 def main():
     print(f"Starting Asteroids with pygame version: {pygame.version.ver}")
     print(f"Screen width: {SCREEN_WIDTH}")
@@ -84,6 +91,8 @@ def main():
         check_quit(pygame)
         screen.fill("black")
         updatable.update(dt)
+
+        check_asteroid_collisions(asteroids)
 
         if check_end_conditions(player, asteroids, screen):
             print_final_score(score, screen)

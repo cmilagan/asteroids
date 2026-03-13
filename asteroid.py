@@ -10,6 +10,11 @@ class Asteroid(CircleShape):
     def update(self, dt):
         self.position += self.velocity * dt
 
+    def collides_with(self, other):
+        if isinstance(other, Asteroid):
+            return super().collides_with(other)
+        return False
+
     def split(self):
         self.kill()
         new_radius = None
