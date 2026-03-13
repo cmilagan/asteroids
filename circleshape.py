@@ -16,6 +16,10 @@ class CircleShape(pygame.sprite.Sprite):
     def draw(self, screen, color, radius, width):
         pygame.draw.circle(screen, color, self.position, radius, width=width)
 
+    def collides_with(self, other):
+        distance = self.position.distance_to(other.position)
+        return distance < self.radius + other.radius
+
     def update(self, dt):
         # must override
         pass
