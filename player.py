@@ -14,6 +14,7 @@ import pygame
 class Player(CircleShape):
     def __init__(self, x, y):
         super().__init__(x, y, PLAYER_RADIUS)
+        self.hitbox_radius = PLAYER_RADIUS * 0.9  # slightly smaller hitbox
         self.image = pygame.image.load(PLAYER_IMAGE).convert_alpha()
         self.rotation = 0
         self.cooldown = 0
@@ -89,3 +90,8 @@ class Player(CircleShape):
         self.cooldown = PLAYER_SHOOT_COOLDOWN_SECONDS
         shot = Shot(self.position.x, self.position.y)
         shot.velocity = pygame.Vector2(0, 1).rotate(self.rotation) * PLAYER_SHOOT_SPEED
+
+    def collides_with(self, other):
+        other_radius = getattr(other, 'hitbox_radius', other.radius)
+        distance = self.position.distance_to(other.position)
+        return distance < (self.hitbox_radius + other_radius)

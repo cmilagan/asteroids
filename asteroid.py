@@ -7,6 +7,7 @@ from logger import log_event
 class Asteroid(CircleShape):
     def __init__(self, x, y, radius):
         super().__init__(x, y, radius)
+        self.hitbox_radius = self.radius * 0.85  # slightly smaller hitbox
         if self.radius == ASTEROID_MIN_RADIUS:
             self.image = pygame.image.load(ASTEROID_SMALL_IMAGE).convert_alpha()
         elif self.radius == ASTEROID_MAX_RADIUS:
@@ -31,9 +32,9 @@ class Asteroid(CircleShape):
         self.position += self.velocity * dt
 
     def collides_with(self, other):
-        if isinstance(other, Asteroid):
-            return super().collides_with(other)
-        return False
+        other_radius = getattr(other, 'hitbox_radius', other.radius)
+        distance = self.position.distance_to(other.position)
+        return distance < (self.hitbox_radius + other_radius)
 
     def split(self):
         self.kill()
